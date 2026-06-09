@@ -1,0 +1,79 @@
+[
+  {
+    "product_name": "Eluvia",
+    "manufacturer": "Boston Scientific",
+    "product_group": "Stent",
+    "document_type": "IFU",
+    "description": "Drug-eluting stent for peripheral arteries",
+    "source_url": "https://example.com/eluvia_ifu",
+    "material": "Cobalt-chromium alloy with polymer drug coating (paclitaxel)",
+    "sizes": ["4.0 mm × 40 mm", "5.0 mm × 60 mm", "6.0 mm × 80 mm", "7.0 mm × 120 mm"],
+    "delivery_system": "Over-the-wire (OTW) delivery system, 6 Fr compatible",
+    "application_area": "Лечение заболеваний периферических артерий нижних конечностей",
+    "coating": "Полимерное покрытие с паклитакселом (drug-eluting)",
+    "contraindications": "Known hypersensitivity to paclitaxel, cobalt, chromium, nickel, or polymer components",
+    "documented_advantages": [
+      "Drug-eluting stent for peripheral arteries (IFU)",
+      "Платформа из кобальт-хромового сплава",
+      "Полимерное покрытие с паклитакселом для снижения рестеноза (по данным IFU)",
+      "Система доставки over-the-wire, совместимость с 6 Fr",
+      "Линейка размеров: 4.0–7.0 mm диаметр, длина 40–120 mm"
+    ],
+    "rzn_number": "РЗН 2018/6789",
+    "rzn_status": "Действующее удостоверение"
+  },
+  {
+    "product_name": "EverFlex",
+    "manufacturer": "Medtronic",
+    "product_group": "Stent",
+    "document_type": "IFU",
+    "description": "Self-expanding stent for peripheral arteries",
+    "source_url": "https://example.com/everflex_ifu",
+    "material": "Nitinol (nickel-titanium alloy), bare metal without drug coating",
+    "sizes": ["5.0 mm × 40 mm", "6.0 mm × 60 mm", "7.0 mm × 80 mm", "8.0 mm × 120 mm"],
+    "delivery_system": "Rapid exchange (RX) delivery system, 6 Fr compatible",
+    "application_area": "Лечение стенозов и окклюзий поверхностных бедренной и подколенной артерий",
+    "coating": "Без лекарственного покрытия (bare metal)",
+    "contraindications": "Known hypersensitivity to nickel or titanium; uncorrected bleeding disorders",
+    "rzn_number": "РЗН 2017/4521",
+    "rzn_status": "Действующее удостоверение"
+  },
+  {
+    "product_name": "Sterling PTA",
+    "manufacturer": "Boston Scientific",
+    "product_group": "Balloon Catheter",
+    "document_type": "IFU",
+    "description": "Percutaneous transluminal angioplasty balloon",
+    "source_url": "https://example.com/sterling_ifu",
+    "material": "Nylon balloon with polyethylene terephthalate (PET) shaft",
+    "sizes": ["3.0 mm × 20 mm", "4.0 mm × 40 mm", "5.0 mm × 60 mm", "6.0 mm × 80 mm"],
+    "delivery_system": "Over-the-wire (OTW) balloon catheter, 5 Fr compatible",
+    "application_area": "Чрескожная транслюминальная ангиопластика периферических артерий",
+    "purpose": "Баллонный катетер для чрескожной транслюминальной ангиопластики (PTA) периферических артерий",
+    "key_features": [
+      "Нейлоновый баллон с валом из полиэтилентерефталата (PET)",
+      "Система доставки over-the-wire, совместимость с 5 Fr",
+      "Диапазон размеров 3.0–6.0 mm × 20–80 mm"
+    ],
+    "compatible_guidewires": [
+      {
+        "name": "Amplatz Super Stiff",
+        "manufacturer": "Cook Medical",
+        "notes": "0.035\", рекомендован в IFU"
+      },
+      {
+        "name": "Teflon-Coated Guidewire",
+        "manufacturer": "Boston Scientific",
+        "notes": "0.035\", совместим по IFU"
+      },
+      {
+        "name": "Wholey Steerable Guidewire",
+        "manufacturer": "Medtronic",
+        "notes": "0.035\", совместим по IFU"
+      }
+    ],
+    "contraindications": "Inability to receive anticoagulant or antiplatelet therapy; uncorrectable bleeding diathesis",
+    "rzn_number": "РЗН 2019/3345",
+    "rzn_status": "Действующее удостоверение"
+  }
+]

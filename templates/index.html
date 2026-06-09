@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Product Assistant MedTech — MVP RAG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header__brand">
+                <span class="header__icon">⚕</span>
+                <div>
+                    <h1>AI Product Assistant MedTech</h1>
+                    <p class="header__subtitle">прототип интеллектуального ассистента для специалистов по медицинским изделиям.</p>
+                </div>
+            </div>
+            <div class="header__subtitle" style="margin-top: 1rem; line-height: 1.7;">
+                <p style="margin-bottom: 0.5rem;">Ассистент помогает:</p>
+                <ul style="padding-left: 1.25rem; list-style: disc;">
+                    <li>находить характеристики изделий;</li>
+                    <li>подбирать совместимые расходные материалы;</li>
+                    <li>готовить краткие обзоры продукции;</li>
+                    <li>сравнивать изделия;</li>
+                    <li>проверять регистрационный статус изделий;</li>
+                    <li>формировать ответы на основе документации производителей.</li>
+                </ul>
+            </div>
+        </header>
+
+        <section class="search-section">
+            <div class="search-bar">
+                <svg class="search-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Поиск по изделиям и документам..." autocomplete="off">
+            </div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="filterManufacturer">Производитель</label>
+                    <select id="filterManufacturer">
+                        <option value="">Все</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterGroup">Категория изделия</label>
+                    <select id="filterGroup">
+                        <option value="">Все</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterDocType">Тип документа</label>
+                    <select id="filterDocType">
+                        <option value="">Все</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="rag-section">
+            <h2 class="section-title">Примеры рабочих сценариев</h2>
+            <div class="demo-questions">
+                <button type="button" class="demo-btn" data-question="Какие размеры доступны для стента Eluvia?">📏 Размеры Eluvia</button>
+                <button type="button" class="demo-btn" data-question="Какие проводники подходят для баллонного катетера Sterling PTA?">🔗 Совместимость Sterling PTA</button>
+                <button type="button" class="demo-btn" data-question="Подготовь краткий обзор баллонного катетера Sterling PTA.">📄 Обзор Sterling PTA</button>
+                <button type="button" class="demo-btn" data-question="Сформируй основные преимущества Eluvia для коммерческого предложения.">💼 Преимущества Eluvia</button>
+                <button type="button" class="demo-btn" data-question="Сравни Eluvia и EverFlex.">⚖️ Сравнить Eluvia и EverFlex</button>
+                <button type="button" class="demo-btn" data-question="Какие противопоказания указаны для EverFlex?">⚠️ Противопоказания EverFlex</button>
+                <button type="button" class="demo-btn" data-question="Проверь регистрационный статус Eluvia.">🏛 Проверить РУ Eluvia</button>
+            </div>
+        </section>
+
+        <section class="rag-section">
+            <h2 class="section-title">RAG-ассистент</h2>
+            <div class="rag-input-row">
+                <input type="text" id="ragInput" placeholder="Задайте вопрос об изделии..." autocomplete="off">
+                <button type="button" id="ragSubmit" class="btn btn--primary">Спросить</button>
+            </div>
+
+            <div id="ragResponse" class="rag-response hidden">
+                <div class="rag-response__header">
+                    <span id="ragScenario" class="rag-scenario-badge"></span>
+                </div>
+                <div id="ragAnswer" class="rag-response__answer"></div>
+                <div id="ragList" class="rag-response__answer hidden"></div>
+                <div id="ragTable" class="rag-table-wrapper hidden"></div>
+                <div id="ragNotice" class="disclaimer hidden" style="margin-top: 1rem; margin-bottom: 0;"></div>
+                <div id="ragSources" class="rag-response__sources"></div>
+            </div>
+
+            <div class="disclaimer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                </svg>
+                <span>Ответ не является медицинской рекомендацией</span>
+            </div>
+        </section>
+
+        <section class="results-section">
+            <div class="results-header">
+                <h2 class="section-title">Результаты поиска</h2>
+                <span id="resultsCount" class="results-count">0 изделий</span>
+            </div>
+            <div id="cardsContainer" class="cards-grid"></div>
+            <div id="noResults" class="no-results hidden">
+                <p>По вашему запросу ничего не найдено</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
