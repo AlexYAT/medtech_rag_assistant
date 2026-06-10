@@ -137,11 +137,30 @@
 
             <div class="rag-input-row">
                 <button type="button" id="cgGenerate" class="btn btn--primary">Сформировать текст</button>
-                <button type="button" id="cgCopy" class="btn btn--primary hidden" style="background: var(--bg-card); color: var(--accent); border: 1px solid var(--accent);">Скопировать текст</button>
             </div>
 
             <div id="cgResponse" class="rag-response hidden">
-                <div id="cgResult" class="rag-response__answer" style="white-space: pre-wrap;"></div>
+                <label for="cgResultText" class="filter-group label" style="margin-bottom: 0.5rem;">
+                    <span style="display:block;font-size:0.75rem;font-weight:500;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.4rem;">Редактируемый текст</span>
+                </label>
+                <textarea id="cgResultText" class="rag-response__answer" rows="12" style="width:100%;resize:vertical;background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);padding:0.85rem;font-family:inherit;font-size:0.92rem;line-height:1.7;"></textarea>
+
+                <div class="rag-input-row" style="margin-top: 1rem;">
+                    <button type="button" id="cgCopy" class="btn btn--primary" style="background: var(--bg-card); color: var(--accent); border: 1px solid var(--accent);">Скопировать текст</button>
+                    <button type="button" id="cgPublishVk" class="btn btn--primary">Опубликовать в VK</button>
+                </div>
+
+                <div class="disclaimer" style="margin-top: 1rem; margin-bottom: 0;">
+                    <span>Перед публикацией проверьте текст и источники. Проект является учебным MVP.</span>
+                </div>
+
+                <div id="cgVkSuccess" class="disclaimer hidden" style="margin-top: 1rem; margin-bottom: 0; color: var(--accent-secondary); border-color: rgba(63, 185, 80, 0.3); background: rgba(63, 185, 80, 0.1);">
+                    <span id="cgVkSuccessText"></span>
+                </div>
+
+                <div id="cgVkError" class="disclaimer hidden" style="margin-top: 1rem; margin-bottom: 0; color: #f85149; border-color: rgba(248, 81, 73, 0.3); background: rgba(248, 81, 73, 0.1);">
+                    <span id="cgVkErrorText"></span>
+                </div>
             </div>
 
             <div id="cgError" class="disclaimer hidden" style="margin-top: 1rem; margin-bottom: 0; color: #f85149; border-color: rgba(248, 81, 73, 0.3); background: rgba(248, 81, 73, 0.1);">

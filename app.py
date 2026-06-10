@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from openai import OpenAI
@@ -12,6 +13,15 @@ app = Flask(__name__)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+VK_ACCESS_TOKEN = os.getenv("VK_ACCESS_TOKEN")
+VK_GROUP_ID = os.getenv("VK_GROUP_ID")
+VK_API_VERSION = os.getenv("VK_API_VERSION", "5.199")
+
+VK_NOT_CONFIGURED_MSG = (
+    "VK integration is not configured. "
+    "Add VK_ACCESS_TOKEN and VK_GROUP_ID to .env."
+)
 
 CONTENT_TYPE_LABELS = {
     "commercial_description": "Коммерческое описание",
@@ -542,6 +552,82 @@ def api_generate_content():
         })
     except Exception as exc:
         return jsonify({"status": "error", "message": str(exc)})
+
+
+def _sanitize_vk_details(details):
+    if not isinstance(details, dict):
+        return details
+    safe = dict(details)
+    for key in ("access_token", "token"):
+        if key in safe:
+            safe[key] = "[hidden]"
+    return safe
+
+
+def publish_to_vk(text):
+    if not VK_ACCESS_TOKEN or not VK_GROUP_ID:
+        return None, VK_NOT_CONFIGURED_MSG, None
+
+    try:
+        group_id = int(VK_GROUP_ID)
+    except (TypeError, ValueError):
+        return None, "VK_GROUP_ID must be a numeric group identifier.", None
+
+    params = {
+        "owner_id": -abs(group_id),
+        "from_group": 1,
+        "message": text,
+        "access_token": VK_ACCESS_TOKEN,
+        "v": VK_API_VERSION,
+    }
+
+    try:
+        response = requests.post(
+            "https://api.vk.com/method/wall.post",
+            data=params,
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        return None, "Failed to connect to VK API.", {"error": str(exc)}
+
+    if "error" in payload:
+        vk_error = payload["error"]
+        message = vk_error.get("error_msg", "VK API returned an error.")
+        return None, message, _sanitize_vk_details(vk_error)
+
+    return payload.get("response"), None, payload.get("response")
+
+
+@app.route("/api/publish-vk", methods=["POST"])
+def api_publish_vk():
+    data = request.get_json(silent=True) or {}
+    text = (data.get("text") or "").strip()
+    publish_mode = (data.get("publish_mode") or "now").strip()
+
+    if not text:
+        return jsonify({"status": "error", "message": "Text cannot be empty."}), 400
+
+    if publish_mode != "now":
+        return jsonify({
+            "status": "error",
+            "message": "Only publish_mode 'now' is supported in this lesson.",
+        }), 400
+
+    vk_response, error_message, details = publish_to_vk(text)
+    if error_message:
+        return jsonify({
+            "status": "error",
+            "message": error_message,
+            "details": _sanitize_vk_details(details) if details else None,
+        })
+
+    return jsonify({
+        "status": "success",
+        "message": "Post published to VK successfully",
+        "vk_response": vk_response,
+    })
 
 
 @app.route("/api/filters")

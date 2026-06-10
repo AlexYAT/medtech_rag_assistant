@@ -23,12 +23,15 @@ const cgContentType = document.getElementById("cgContentType");
 const cgTone = document.getElementById("cgTone");
 const cgGenerate = document.getElementById("cgGenerate");
 const cgCopy = document.getElementById("cgCopy");
+const cgPublishVk = document.getElementById("cgPublishVk");
 const cgResponse = document.getElementById("cgResponse");
-const cgResult = document.getElementById("cgResult");
+const cgResultText = document.getElementById("cgResultText");
 const cgError = document.getElementById("cgError");
 const cgErrorText = document.getElementById("cgErrorText");
-
-let generatedContentText = "";
+const cgVkSuccess = document.getElementById("cgVkSuccess");
+const cgVkSuccessText = document.getElementById("cgVkSuccessText");
+const cgVkError = document.getElementById("cgVkError");
+const cgVkErrorText = document.getElementById("cgVkErrorText");
 
 const SCENARIO_LABELS = {
     technical_specs: "Technical Specs",
@@ -101,6 +104,7 @@ function bindEvents() {
 
     cgGenerate.addEventListener("click", generateContent);
     cgCopy.addEventListener("click", copyGeneratedContent);
+    cgPublishVk.addEventListener("click", publishToVk);
 }
 
 function applyFilters() {
@@ -308,8 +312,7 @@ async function generateContent() {
     cgGenerate.textContent = "Генерация...";
     cgError.classList.add("hidden");
     cgResponse.classList.add("hidden");
-    cgCopy.classList.add("hidden");
-    generatedContentText = "";
+    hideVkStatus();
 
     try {
         const res = await fetch("/api/generate-content", {
@@ -329,10 +332,8 @@ async function generateContent() {
             return;
         }
 
-        generatedContentText = data.generated_text;
-        cgResult.textContent = generatedContentText;
+        cgResultText.value = data.generated_text;
         cgResponse.classList.remove("hidden");
-        cgCopy.classList.remove("hidden");
         cgResponse.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (err) {
         console.error("Content generation error:", err);
@@ -347,14 +348,37 @@ function showCgError(message) {
     cgErrorText.textContent = message;
     cgError.classList.remove("hidden");
     cgResponse.classList.add("hidden");
-    cgCopy.classList.add("hidden");
+}
+
+function getEditableContentText() {
+    return (cgResultText.value || "").trim();
+}
+
+function hideVkStatus() {
+    cgVkSuccess.classList.add("hidden");
+    cgVkError.classList.add("hidden");
+    cgVkSuccessText.textContent = "";
+    cgVkErrorText.textContent = "";
+}
+
+function showVkSuccess(message) {
+    hideVkStatus();
+    cgVkSuccessText.textContent = message;
+    cgVkSuccess.classList.remove("hidden");
+}
+
+function showVkError(message) {
+    hideVkStatus();
+    cgVkErrorText.textContent = message;
+    cgVkError.classList.remove("hidden");
 }
 
 async function copyGeneratedContent() {
-    if (!generatedContentText) return;
+    const text = getEditableContentText();
+    if (!text) return;
 
     try {
-        await navigator.clipboard.writeText(generatedContentText);
+        await navigator.clipboard.writeText(text);
         const original = cgCopy.textContent;
         cgCopy.textContent = "Скопировано!";
         setTimeout(() => {
@@ -363,6 +387,44 @@ async function copyGeneratedContent() {
     } catch (err) {
         console.error("Copy error:", err);
         showCgError("Не удалось скопировать текст в буфер обмена.");
+    }
+}
+
+async function publishToVk() {
+    const text = getEditableContentText();
+    if (!text) {
+        showVkError("Введите или сгенерируйте текст перед публикацией.");
+        return;
+    }
+
+    cgPublishVk.classList.add("loading");
+    cgPublishVk.textContent = "Публикация...";
+    hideVkStatus();
+
+    try {
+        const res = await fetch("/api/publish-vk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: text,
+                publish_mode: "now",
+            }),
+        });
+
+        const data = await res.json();
+
+        if (data.status !== "success") {
+            showVkError(data.message || "Ошибка публикации в VK.");
+            return;
+        }
+
+        showVkSuccess(data.message || "Пост успешно опубликован в VK.");
+    } catch (err) {
+        console.error("VK publish error:", err);
+        showVkError("Не удалось выполнить публикацию в VK.");
+    } finally {
+        cgPublishVk.classList.remove("loading");
+        cgPublishVk.textContent = "Опубликовать в VK";
     }
 }
 

@@ -91,6 +91,7 @@ http://127.0.0.1:5000
 | `GET` | `/api/filters` | Filter options (manufacturer, group, document type) |
 | `POST` | `/api/rag` | RAG assistant query |
 | `POST` | `/api/generate-content` | OpenAI content generation |
+| `POST` | `/api/publish-vk` | Publish edited content to VK group |
 
 Example RAG request:
 
@@ -194,6 +195,68 @@ http://127.0.0.1:5000
 ```
 
 If `.env` is missing or `OPENAI_API_KEY` is not set, the application still runs — Content Generator returns a clear configuration message.
+
+---
+
+## Lesson 03 — VK Publishing Integration
+
+### What was added
+
+- Editable textarea for generated content before publishing
+- **Copy** button for generated/edited text
+- **Опубликовать в VK** button with explicit user confirmation
+- `POST /api/publish-vk` endpoint using VK API `wall.post`
+- Success and error status messages after publishing attempt
+- Educational disclaimer before VK publishing
+
+### Required environment variables
+
+```env
+VK_ACCESS_TOKEN=your_vk_access_token_here
+VK_GROUP_ID=your_vk_group_id_here
+VK_API_VERSION=5.199
+```
+
+### VK configuration
+
+1. Create a VK community (group) for testing.
+2. Obtain a community access token with `wall` permission.
+3. Add variables to local `.env` (never commit `.env` to GitHub).
+
+Setup example:
+
+```bash
+copy .env.example .env
+```
+
+Fill in:
+
+```env
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
+VK_ACCESS_TOKEN=...
+VK_GROUP_ID=...
+VK_API_VERSION=5.199
+```
+
+### Run locally
+
+```bash
+python app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+### Important notes
+
+- `.env` is not committed to GitHub
+- Review generated text and sources before publishing to VK
+- If `VK_ACCESS_TOKEN` or `VK_GROUP_ID` is missing, the app still runs and returns a friendly configuration error
+- VK token is never exposed in UI, logs, or API error messages
 
 ---
 
