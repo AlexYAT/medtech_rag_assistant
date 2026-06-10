@@ -92,6 +92,7 @@ http://127.0.0.1:5000
 | `POST` | `/api/rag` | RAG assistant query |
 | `POST` | `/api/generate-content` | OpenAI content generation |
 | `POST` | `/api/publish-vk` | Publish edited content to VK group |
+| `GET` | `/api/config-status` | Safe configuration diagnostics (no secrets) |
 
 Example RAG request:
 
@@ -257,6 +258,25 @@ http://127.0.0.1:5000
 - Review generated text and sources before publishing to VK
 - If `VK_ACCESS_TOKEN` or `VK_GROUP_ID` is missing, the app still runs and returns a friendly configuration error
 - VK token is never exposed in UI, logs, or API error messages
+
+### VK troubleshooting
+
+If VK publishing says integration is not configured:
+
+1. Check that `.env` is in the project root:
+   `D:\Work\Intensiv 3.0\Project\medtech_rag_assistant\.env`
+2. Check variable names exactly:
+   `VK_ACCESS_TOKEN`
+   `VK_GROUP_ID`
+   `VK_API_VERSION`
+3. Restart Flask after editing `.env`.
+4. Open:
+   `http://127.0.0.1:5000/api/config-status`
+5. Confirm:
+   `vk_access_token_loaded = true`
+   `vk_group_id_loaded = true`
+
+Do not use alternative names such as `VK_TOKEN`, `VK_COMMUNITY_ID`, or `GROUP_ID`.
 
 ---
 

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -7,21 +8,99 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from openai import OpenAI
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
+logger = logging.getLogger(__name__)
+
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+
+PLACEHOLDER_VALUES = frozenset({
+    "your_openai_api_key_here",
+    "your_vk_access_token_here",
+    "your_vk_group_id_here",
+})
+
+
+def reload_environment():
+    load_dotenv(ENV_PATH, override=True)
+
+
+def _env_loaded(value):
+    if value is None:
+        return False
+    stripped = str(value).strip()
+    if not stripped:
+        return False
+    if stripped.lower() in PLACEHOLDER_VALUES:
+        return False
+    return True
+
+
+def get_vk_settings():
+    reload_environment()
+    return {
+        "access_token": (os.getenv("VK_ACCESS_TOKEN") or "").strip(),
+        "group_id": (os.getenv("VK_GROUP_ID") or "").strip(),
+        "api_version": (os.getenv("VK_API_VERSION") or "5.199").strip() or "5.199",
+    }
+
+
+def get_config_status():
+    reload_environment()
+    vk_settings = get_vk_settings()
+    return {
+        "openai_api_key_loaded": _env_loaded(os.getenv("OPENAI_API_KEY")),
+        "openai_model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        "vk_access_token_loaded": _env_loaded(vk_settings["access_token"]),
+        "vk_group_id_loaded": _env_loaded(vk_settings["group_id"]),
+        "vk_api_version": vk_settings["api_version"],
+    }
+
+
+def _mask_token(token):
+    if not token:
+        return "not loaded"
+    return f"****{token[-4:]}" if len(token) >= 4 else "****"
+
+
+def log_config_status():
+    status = get_config_status()
+    vk_settings = get_vk_settings()
+    logger.info("VK config status:")
+    logger.info(
+        "OPENAI_API_KEY loaded: %s",
+        "yes" if status["openai_api_key_loaded"] else "no",
+    )
+    logger.info(
+        "VK_ACCESS_TOKEN loaded: %s",
+        "yes" if status["vk_access_token_loaded"] else "no",
+    )
+    if status["vk_access_token_loaded"]:
+        logger.info("vk token loaded: %s", _mask_token(vk_settings["access_token"]))
+    logger.info(
+        "VK_GROUP_ID loaded: %s",
+        "yes" if status["vk_group_id_loaded"] else "no",
+    )
+    logger.info("VK_API_VERSION: %s", status["vk_api_version"])
+
+
+def vk_config_error_details():
+    status = get_config_status()
+    return {
+        "vk_access_token_loaded": status["vk_access_token_loaded"],
+        "vk_group_id_loaded": status["vk_group_id_loaded"],
+        "hint": (
+            "Check .env location, variable names, and restart Flask after editing .env."
+        ),
+    }
+
+
+reload_environment()
 
 app = Flask(__name__)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-VK_ACCESS_TOKEN = os.getenv("VK_ACCESS_TOKEN")
-VK_GROUP_ID = os.getenv("VK_GROUP_ID")
-VK_API_VERSION = os.getenv("VK_API_VERSION", "5.199")
-
-VK_NOT_CONFIGURED_MSG = (
-    "VK integration is not configured. "
-    "Add VK_ACCESS_TOKEN and VK_GROUP_ID to .env."
-)
+VK_NOT_CONFIGURED_MSG = "VK integration is not configured."
 
 CONTENT_TYPE_LABELS = {
     "commercial_description": "Коммерческое описание",
@@ -565,11 +644,15 @@ def _sanitize_vk_details(details):
 
 
 def publish_to_vk(text):
-    if not VK_ACCESS_TOKEN or not VK_GROUP_ID:
-        return None, VK_NOT_CONFIGURED_MSG, None
+    vk_settings = get_vk_settings()
+    token_loaded = _env_loaded(vk_settings["access_token"])
+    group_loaded = _env_loaded(vk_settings["group_id"])
+
+    if not token_loaded or not group_loaded:
+        return None, VK_NOT_CONFIGURED_MSG, vk_config_error_details()
 
     try:
-        group_id = int(VK_GROUP_ID)
+        group_id = int(vk_settings["group_id"])
     except (TypeError, ValueError):
         return None, "VK_GROUP_ID must be a numeric group identifier.", None
 
@@ -577,8 +660,8 @@ def publish_to_vk(text):
         "owner_id": -abs(group_id),
         "from_group": 1,
         "message": text,
-        "access_token": VK_ACCESS_TOKEN,
-        "v": VK_API_VERSION,
+        "access_token": vk_settings["access_token"],
+        "v": vk_settings["api_version"],
     }
 
     try:
@@ -594,7 +677,9 @@ def publish_to_vk(text):
 
     if "error" in payload:
         vk_error = payload["error"]
-        message = vk_error.get("error_msg", "VK API returned an error.")
+        error_code = vk_error.get("error_code")
+        error_msg = vk_error.get("error_msg", "VK API returned an error.")
+        message = f"VK API error {error_code}: {error_msg}" if error_code else error_msg
         return None, message, _sanitize_vk_details(vk_error)
 
     return payload.get("response"), None, payload.get("response")
@@ -630,6 +715,11 @@ def api_publish_vk():
     })
 
 
+@app.route("/api/config-status")
+def api_config_status():
+    return jsonify(get_config_status())
+
+
 @app.route("/api/filters")
 def api_filters():
     products = load_content()
@@ -646,4 +736,6 @@ def api_filters():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    log_config_status()
     app.run(debug=True, host="127.0.0.1", port=5000)
