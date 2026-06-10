@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from openai import OpenAI
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 app = Flask(__name__)
 
