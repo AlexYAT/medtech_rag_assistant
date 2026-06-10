@@ -47,6 +47,7 @@ medtech_rag_assistant/
 ├── app.py
 ├── content.json
 ├── requirements.txt
+├── .env.example
 ├── .gitignore
 ├── templates/index.html
 ├── static/style.css
@@ -89,6 +90,7 @@ http://127.0.0.1:5000
 | `GET` | `/api/products` | All products from `content.json` |
 | `GET` | `/api/filters` | Filter options (manufacturer, group, document type) |
 | `POST` | `/api/rag` | RAG assistant query |
+| `POST` | `/api/generate-content` | OpenAI content generation |
 
 Example RAG request:
 
@@ -127,6 +129,71 @@ git branch -M main
 git remote add origin <your-repo-url>
 git push -u origin main
 ```
+
+---
+
+## Lesson 02 — Content Generator with OpenAI API
+
+### What was added
+
+- **Content Generator** section on the main page for generating work texts for MedTech managers, product specialists, and sales teams
+- `POST /api/generate-content` endpoint powered by OpenAI API
+- Product data from `content.json` is passed to the model as context
+- Generated text includes source URL and manufacturer document verification notice
+
+### Supported content types
+
+1. Commercial description (`commercial_description`)
+2. Catalog description (`catalog_description`)
+3. Technical description for physicians (`technical_doctor`)
+4. Client email (`client_email`)
+5. Social media post (`social_post`)
+
+### Supported tones
+
+1. Expert (`expert`)
+2. Business (`business`)
+3. Brief (`brief`)
+4. Friendly (`friendly`)
+
+### OpenAI API configuration
+
+The API key is stored in a local `.env` file and is **not** published to GitHub.
+
+Create environment from example:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Create `.env` from `.env.example`:
+
+```bash
+copy .env.example .env
+```
+
+Fill in your credentials:
+
+```env
+OPENAI_API_KEY=your_real_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+### Run
+
+```bash
+python app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
+```
+
+If `.env` is missing or `OPENAI_API_KEY` is not set, the application still runs — Content Generator returns a clear configuration message.
 
 ---
 

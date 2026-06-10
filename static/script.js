@@ -18,6 +18,18 @@ const ragTable = document.getElementById("ragTable");
 const ragNotice = document.getElementById("ragNotice");
 const ragSources = document.getElementById("ragSources");
 
+const cgProduct = document.getElementById("cgProduct");
+const cgContentType = document.getElementById("cgContentType");
+const cgTone = document.getElementById("cgTone");
+const cgGenerate = document.getElementById("cgGenerate");
+const cgCopy = document.getElementById("cgCopy");
+const cgResponse = document.getElementById("cgResponse");
+const cgResult = document.getElementById("cgResult");
+const cgError = document.getElementById("cgError");
+const cgErrorText = document.getElementById("cgErrorText");
+
+let generatedContentText = "";
+
 const SCENARIO_LABELS = {
     technical_specs: "Technical Specs",
     comparison: "Comparison",
@@ -40,6 +52,7 @@ async function init() {
         populateSelect(filterGroup, filters.product_groups);
         populateSelect(filterDocType, filters.document_types);
 
+        populateProductSelect(cgProduct, allProducts);
         renderCards(allProducts);
         bindEvents();
     } catch (err) {
@@ -54,6 +67,15 @@ function populateSelect(select, options) {
         const el = document.createElement("option");
         el.value = opt;
         el.textContent = opt;
+        select.appendChild(el);
+    });
+}
+
+function populateProductSelect(select, products) {
+    products.forEach((product) => {
+        const el = document.createElement("option");
+        el.value = product.product_name;
+        el.textContent = `${product.product_name} (${product.manufacturer})`;
         select.appendChild(el);
     });
 }
@@ -76,6 +98,9 @@ function bindEvents() {
             askRag(question);
         });
     });
+
+    cgGenerate.addEventListener("click", generateContent);
+    cgCopy.addEventListener("click", copyGeneratedContent);
 }
 
 function applyFilters() {
@@ -267,6 +292,78 @@ function escapeHtml(str) {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+}
+
+async function generateContent() {
+    const productName = cgProduct.value;
+    const contentType = cgContentType.value;
+    const tone = cgTone.value;
+
+    if (!productName) {
+        showCgError("Выберите изделие для генерации текста.");
+        return;
+    }
+
+    cgGenerate.classList.add("loading");
+    cgGenerate.textContent = "Генерация...";
+    cgError.classList.add("hidden");
+    cgResponse.classList.add("hidden");
+    cgCopy.classList.add("hidden");
+    generatedContentText = "";
+
+    try {
+        const res = await fetch("/api/generate-content", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                product_name: productName,
+                content_type: contentType,
+                tone: tone,
+            }),
+        });
+
+        const data = await res.json();
+
+        if (data.status !== "success") {
+            showCgError(data.message || "Ошибка генерации текста.");
+            return;
+        }
+
+        generatedContentText = data.generated_text;
+        cgResult.textContent = generatedContentText;
+        cgResponse.classList.remove("hidden");
+        cgCopy.classList.remove("hidden");
+        cgResponse.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } catch (err) {
+        console.error("Content generation error:", err);
+        showCgError("Не удалось получить ответ от сервера.");
+    } finally {
+        cgGenerate.classList.remove("loading");
+        cgGenerate.textContent = "Сформировать текст";
+    }
+}
+
+function showCgError(message) {
+    cgErrorText.textContent = message;
+    cgError.classList.remove("hidden");
+    cgResponse.classList.add("hidden");
+    cgCopy.classList.add("hidden");
+}
+
+async function copyGeneratedContent() {
+    if (!generatedContentText) return;
+
+    try {
+        await navigator.clipboard.writeText(generatedContentText);
+        const original = cgCopy.textContent;
+        cgCopy.textContent = "Скопировано!";
+        setTimeout(() => {
+            cgCopy.textContent = original;
+        }, 2000);
+    } catch (err) {
+        console.error("Copy error:", err);
+        showCgError("Не удалось скопировать текст в буфер обмена.");
+    }
 }
 
 function pluralize(n, one, few, many) {

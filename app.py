@@ -1,9 +1,36 @@
 import json
+import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+from openai import OpenAI
+
+load_dotenv()
 
 app = Flask(__name__)
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+CONTENT_TYPE_LABELS = {
+    "commercial_description": "Коммерческое описание",
+    "catalog_description": "Краткое описание для каталога",
+    "technical_doctor": "Техническое описание для врача",
+    "client_email": "Email клиенту",
+    "social_post": "Пост для соцсетей",
+}
+
+TONE_LABELS = {
+    "expert": "Экспертный",
+    "business": "Деловой",
+    "brief": "Краткий",
+    "friendly": "Дружелюбный",
+}
+
+CONTENT_FOOTER_WARNING = (
+    "Проверьте критически важные параметры по оригинальному документу производителя."
+)
 
 CONTENT_PATH = Path(__file__).parent / "content.json"
 
@@ -404,6 +431,117 @@ def api_rag():
     result = handler(products, question)
 
     return jsonify(result)
+
+
+def build_product_context(product):
+    return {
+        "product_name": product.get("product_name"),
+        "manufacturer": product.get("manufacturer"),
+        "product_group": product.get("product_group"),
+        "description": product.get("description"),
+        "application_area": product.get("application_area"),
+        "purpose": product.get("purpose"),
+        "key_features": product.get("key_features"),
+        "documented_advantages": product.get("documented_advantages"),
+        "compatible_guidewires": product.get("compatible_guidewires"),
+        "source_url": product.get("source_url"),
+    }
+
+
+def build_content_prompt(product, content_type, tone):
+    product_data = build_product_context(product)
+    content_label = CONTENT_TYPE_LABELS[content_type]
+    tone_label = TONE_LABELS[tone]
+
+    system_prompt = (
+        "You are a medical device content assistant for MedTech sales and product teams. "
+        "Generate text ONLY based on the provided product data from manufacturer documentation. "
+        "Rules:\n"
+        "- Do NOT invent medical properties, clinical outcomes, or indications not in the data.\n"
+        "- Do NOT provide medical advice or treatment recommendations.\n"
+        "- If data is insufficient for a section, explicitly state the limitation.\n"
+        "- Write in Russian.\n"
+        "- Do not add source URL or disclaimer — they will be appended separately."
+    )
+
+    user_prompt = (
+        f"Content type: {content_label}\n"
+        f"Tone: {tone_label}\n\n"
+        f"Product data (JSON):\n{json.dumps(product_data, ensure_ascii=False, indent=2)}\n\n"
+        f"Generate the requested {content_label.lower()} in {tone_label.lower()} tone."
+    )
+
+    return system_prompt, user_prompt
+
+
+def generate_content_with_openai(product, content_type, tone):
+    system_prompt, user_prompt = build_content_prompt(product, content_type, tone)
+    client = OpenAI(api_key=OPENAI_API_KEY)
+
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.5,
+    )
+
+    generated = response.choices[0].message.content.strip()
+    source_url = product.get("source_url", "")
+
+    return (
+        f"{generated}\n\n"
+        f"Источник: {source_url}\n\n"
+        f"{CONTENT_FOOTER_WARNING}"
+    )
+
+
+@app.route("/api/generate-content", methods=["POST"])
+def api_generate_content():
+    data = request.get_json(silent=True) or {}
+    product_name = (data.get("product_name") or "").strip()
+    content_type = (data.get("content_type") or "").strip()
+    tone = (data.get("tone") or "").strip()
+
+    if not product_name or not content_type or not tone:
+        return jsonify({"status": "error", "message": "Missing required fields."}), 400
+
+    if content_type not in CONTENT_TYPE_LABELS:
+        return jsonify({"status": "error", "message": "Invalid content_type."}), 400
+
+    if tone not in TONE_LABELS:
+        return jsonify({"status": "error", "message": "Invalid tone."}), 400
+
+    if not OPENAI_API_KEY:
+        return jsonify({
+            "status": "error",
+            "message": (
+                "OpenAI API key is not configured. "
+                "Create .env file based on .env.example."
+            ),
+        })
+
+    products = load_content()
+    product = find_product(products, product_name)
+    if not product:
+        return jsonify({
+            "status": "error",
+            "message": f"Product '{product_name}' not found.",
+        }), 404
+
+    try:
+        generated_text = generate_content_with_openai(product, content_type, tone)
+        return jsonify({
+            "status": "success",
+            "product_name": product_name,
+            "content_type": content_type,
+            "tone": tone,
+            "generated_text": generated_text,
+            "source_url": product.get("source_url", ""),
+        })
+    except Exception as exc:
+        return jsonify({"status": "error", "message": str(exc)})
 
 
 @app.route("/api/filters")

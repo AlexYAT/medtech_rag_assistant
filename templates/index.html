@@ -101,6 +101,54 @@
             </div>
         </section>
 
+        <section class="rag-section">
+            <h2 class="section-title">Content Generator</h2>
+            <p class="header__subtitle" style="margin-bottom: 1rem;">
+                Генерация рабочих текстов для менеджеров, продуктовых специалистов и специалистов по продажам медицинских изделий.
+            </p>
+
+            <div class="filters" style="margin-bottom: 1rem;">
+                <div class="filter-group">
+                    <label for="cgProduct">Изделие</label>
+                    <select id="cgProduct">
+                        <option value="">Выберите изделие</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="cgContentType">Тип текста</label>
+                    <select id="cgContentType">
+                        <option value="commercial_description">Коммерческое описание</option>
+                        <option value="catalog_description">Краткое описание для каталога</option>
+                        <option value="technical_doctor">Техническое описание для врача</option>
+                        <option value="client_email">Email клиенту</option>
+                        <option value="social_post">Пост для соцсетей</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="cgTone">Тон</label>
+                    <select id="cgTone">
+                        <option value="expert">Экспертный</option>
+                        <option value="business">Деловой</option>
+                        <option value="brief">Краткий</option>
+                        <option value="friendly">Дружелюбный</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="rag-input-row">
+                <button type="button" id="cgGenerate" class="btn btn--primary">Сформировать текст</button>
+                <button type="button" id="cgCopy" class="btn btn--primary hidden" style="background: var(--bg-card); color: var(--accent); border: 1px solid var(--accent);">Скопировать текст</button>
+            </div>
+
+            <div id="cgResponse" class="rag-response hidden">
+                <div id="cgResult" class="rag-response__answer" style="white-space: pre-wrap;"></div>
+            </div>
+
+            <div id="cgError" class="disclaimer hidden" style="margin-top: 1rem; margin-bottom: 0; color: #f85149; border-color: rgba(248, 81, 73, 0.3); background: rgba(248, 81, 73, 0.1);">
+                <span id="cgErrorText"></span>
+            </div>
+        </section>
+
         <section class="results-section">
             <div class="results-header">
                 <h2 class="section-title">Результаты поиска</h2>
